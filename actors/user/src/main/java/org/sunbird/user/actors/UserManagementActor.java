@@ -2,6 +2,8 @@ package org.sunbird.user.actors;
 
 import static org.sunbird.learner.util.Util.isNotNull;
 
+import akka.actor.ActorRef;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -11,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -53,10 +54,6 @@ import org.sunbird.telemetry.util.TelemetryUtil;
 import org.sunbird.user.service.UserService;
 import org.sunbird.user.service.impl.UserServiceImpl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import akka.actor.ActorRef;
-
 /**
  * This actor will handle course enrollment operation .
  *
@@ -64,20 +61,21 @@ import akka.actor.ActorRef;
  * @author Amit Kumar
  */
 @ActorConfig(
-    tasks = {
-      "createUser",
-      "updateUser",
-      "getUserProfile",
-      "getRoles",
-      "getUserDetailsByLoginId",
-      "profileVisibility",
-      "unblockUser",
-      "blockUser",
-      "assignRoles",
-      "userCurrentLogin",
-      "getMediaTypes"
-    },
-    asyncTasks = {})
+  tasks = {
+    "createUser",
+    "updateUser",
+    "getUserProfile",
+    "getRoles",
+    "getUserDetailsByLoginId",
+    "profileVisibility",
+    "unblockUser",
+    "blockUser",
+    "assignRoles",
+    "userCurrentLogin",
+    "getMediaTypes"
+  },
+  asyncTasks = {}
+)
 public class UserManagementActor extends BaseActor {
   private ObjectMapper mapper = new ObjectMapper();
   private CassandraOperation cassandraOperation = ServiceFactory.getInstance();
@@ -95,14 +93,14 @@ public class UserManagementActor extends BaseActor {
   private Util.DbInfo geoLocationDbInfo = Util.dbInfoMap.get(JsonKey.GEO_LOCATION_DB);
   private static final boolean IS_REGISTRY_ENABLED =
       Boolean.parseBoolean(ProjectUtil.getConfigValue(JsonKey.SUNBIRD_OPENSABER_BRIDGE_ENABLE));
-  private ActorRef systemSettingActorRef =
-      getActorRef(ActorOperations.GET_SYSTEM_SETTING.getValue());
+  private ActorRef systemSettingActorRef = null;
   private UserRequestValidator userRequestValidator = new UserRequestValidator();
   private UserService userService = new UserServiceImpl();
   /** Receives the actor message and perform the course enrollment operation . */
   @Override
   public void onReceive(Request request) throws Throwable {
     Util.initializeContext(request, JsonKey.USER);
+    systemSettingActorRef = getActorRef(ActorOperations.GET_SYSTEM_SETTING.getValue());
     // set request id fto thread loacl...
     ExecutionContext.setRequestId(request.getRequestId());
     String operation = request.getOperation();
@@ -1360,10 +1358,10 @@ public class UserManagementActor extends BaseActor {
     Map<String, Object> userMap = actorMessage.getRequest();
     String version = (String) actorMessage.getContext().get(JsonKey.VERSION);
     if (StringUtils.isNotBlank(version) && JsonKey.VERSION_2.equalsIgnoreCase(version)) {
-    	userRequestValidator.validateCreateUserV2Request(actorMessage);
+      userRequestValidator.validateCreateUserV2Request(actorMessage);
       validateChannelAndOrganisationId(userMap);
     } else {
-    	userRequestValidator.validateCreateUserV1Request(actorMessage);
+      userRequestValidator.validateCreateUserV1Request(actorMessage);
     }
 
     // remove these fields from req
@@ -2024,7 +2022,7 @@ public class UserManagementActor extends BaseActor {
    */
   @SuppressWarnings("unchecked")
   private void assignRoles(Request actorMessage) {
-	userRequestValidator.validateAssignRole(actorMessage);
+    userRequestValidator.validateAssignRole(actorMessage);
     Map<String, Object> requestMap = actorMessage.getRequest();
 
     if (null != requestMap.get(JsonKey.ROLES)
