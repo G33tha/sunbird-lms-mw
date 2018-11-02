@@ -52,21 +52,27 @@ public class JobProfileManagementActor extends BaseActor {
     List<String> errMsgs = new ArrayList<>();
     try {
       for (int i = 0; i < reqList.size(); i++) {
-        Map<String, Object> jobProfileMap = reqList.get(i);
-        String createdBy = (String) requestMap.get(JsonKey.CREATED_BY);
-        Response addrResponse = null;
-        jobProfileMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
-        if (jobProfileMap.containsKey(JsonKey.ADDRESS)) {
-          addrResponse = upsertJobProfileAddressDetails(jobProfileMap, createdBy);
+        try {
+          Map<String, Object> jobProfileMap = reqList.get(i);
+          String createdBy = (String) requestMap.get(JsonKey.CREATED_BY);
+          Response addrResponse = null;
+          jobProfileMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
+          if (jobProfileMap.containsKey(JsonKey.ADDRESS)) {
+            addrResponse = upsertJobProfileAddressDetails(jobProfileMap, createdBy);
+          }
+          insertJobProfileDetails(requestMap, jobProfileMap, addrResponse, createdBy);
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
         }
-        insertJobProfileDetails(requestMap, jobProfileMap, addrResponse, createdBy);
       }
     } catch (Exception e) {
       errMsgs.add(e.getMessage());
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.JOB_PROFILE + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.JOB_PROFILE);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }
@@ -82,24 +88,29 @@ public class JobProfileManagementActor extends BaseActor {
     List<String> errMsgs = new ArrayList<>();
     try {
       for (int i = 0; i < reqList.size(); i++) {
-        Map<String, Object> jobProfileMap = reqList.get(i);
-        String createdBy = (String) requestMap.get(JsonKey.CREATED_BY);
-        Response addrResponse = null;
-        if (jobProfileMap.containsKey(JsonKey.IS_DELETED)
-            && null != jobProfileMap.get(JsonKey.IS_DELETED)
-            && ((boolean) jobProfileMap.get(JsonKey.IS_DELETED))
-            && !StringUtils.isBlank((String) jobProfileMap.get(JsonKey.ID))) {
-          deleteJobProfileDetails(jobProfileMap);
-          continue;
-        }
-        if (jobProfileMap.containsKey(JsonKey.ADDRESS)) {
-          addrResponse = upsertJobProfileAddressDetails(jobProfileMap, createdBy);
-        }
-        if (StringUtils.isBlank((String) jobProfileMap.get(JsonKey.ID))) {
-          jobProfileMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
-          insertJobProfileDetails(requestMap, jobProfileMap, addrResponse, createdBy);
-        } else {
-          updateJobProfileDetails(jobProfileMap, addrResponse, createdBy);
+        try {
+          Map<String, Object> jobProfileMap = reqList.get(i);
+          String createdBy = (String) requestMap.get(JsonKey.CREATED_BY);
+          Response addrResponse = null;
+          if (jobProfileMap.containsKey(JsonKey.IS_DELETED)
+              && null != jobProfileMap.get(JsonKey.IS_DELETED)
+              && ((boolean) jobProfileMap.get(JsonKey.IS_DELETED))
+              && !StringUtils.isBlank((String) jobProfileMap.get(JsonKey.ID))) {
+            deleteJobProfileDetails(jobProfileMap);
+            continue;
+          }
+          if (jobProfileMap.containsKey(JsonKey.ADDRESS)) {
+            addrResponse = upsertJobProfileAddressDetails(jobProfileMap, createdBy);
+          }
+          if (StringUtils.isBlank((String) jobProfileMap.get(JsonKey.ID))) {
+            jobProfileMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
+            insertJobProfileDetails(requestMap, jobProfileMap, addrResponse, createdBy);
+          } else {
+            updateJobProfileDetails(jobProfileMap, addrResponse, createdBy);
+          }
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
         }
       }
     } catch (Exception e) {
@@ -107,7 +118,8 @@ public class JobProfileManagementActor extends BaseActor {
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.JOB_PROFILE + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.JOB_PROFILE);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }

@@ -53,21 +53,27 @@ public class EducationManagementActor extends BaseActor {
     List<String> errMsgs = new ArrayList<>();
     try {
       for (int i = 0; i < reqList.size(); i++) {
-        Map<String, Object> educationDetailsMap = reqList.get(i);
-        String createdBy = (String) requestMap.get(JsonKey.ID);
-        Response addrResponse = null;
-        educationDetailsMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
-        if (educationDetailsMap.containsKey(JsonKey.ADDRESS)) {
-          addrResponse = upsertEducationAddressDetails(educationDetailsMap, createdBy);
+        try {
+          Map<String, Object> educationDetailsMap = reqList.get(i);
+          String createdBy = (String) requestMap.get(JsonKey.ID);
+          Response addrResponse = null;
+          educationDetailsMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
+          if (educationDetailsMap.containsKey(JsonKey.ADDRESS)) {
+            addrResponse = upsertEducationAddressDetails(educationDetailsMap, createdBy);
+          }
+          insertEducationDetails(requestMap, educationDetailsMap, addrResponse, createdBy);
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
         }
-        insertEducationDetails(requestMap, educationDetailsMap, addrResponse, createdBy);
       }
     } catch (Exception e) {
       errMsgs.add(e.getMessage());
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.EDUCATION + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.EDUCATION);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }
@@ -83,24 +89,29 @@ public class EducationManagementActor extends BaseActor {
     List<String> errMsgs = new ArrayList<>();
     try {
       for (int i = 0; i < reqList.size(); i++) {
-        Map<String, Object> educationDetailsMap = reqList.get(i);
-        String createdBy = (String) requestMap.get(JsonKey.ID);
-        Response addrResponse = null;
-        if (educationDetailsMap.containsKey(JsonKey.IS_DELETED)
-            && null != educationDetailsMap.get(JsonKey.IS_DELETED)
-            && ((boolean) educationDetailsMap.get(JsonKey.IS_DELETED))
-            && !StringUtils.isBlank((String) educationDetailsMap.get(JsonKey.ID))) {
-          deleteEducationDetails(educationDetailsMap);
-          continue;
-        }
-        if (educationDetailsMap.containsKey(JsonKey.ADDRESS)) {
-          addrResponse = upsertEducationAddressDetails(educationDetailsMap, createdBy);
-        }
-        if (StringUtils.isBlank((String) educationDetailsMap.get(JsonKey.ID))) {
-          educationDetailsMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
-          insertEducationDetails(requestMap, educationDetailsMap, addrResponse, createdBy);
-        } else {
-          updateEducationDetails(educationDetailsMap, addrResponse, createdBy);
+        try {
+          Map<String, Object> educationDetailsMap = reqList.get(i);
+          String createdBy = (String) requestMap.get(JsonKey.ID);
+          Response addrResponse = null;
+          if (educationDetailsMap.containsKey(JsonKey.IS_DELETED)
+              && null != educationDetailsMap.get(JsonKey.IS_DELETED)
+              && ((boolean) educationDetailsMap.get(JsonKey.IS_DELETED))
+              && !StringUtils.isBlank((String) educationDetailsMap.get(JsonKey.ID))) {
+            deleteEducationDetails(educationDetailsMap);
+            continue;
+          }
+          if (educationDetailsMap.containsKey(JsonKey.ADDRESS)) {
+            addrResponse = upsertEducationAddressDetails(educationDetailsMap, createdBy);
+          }
+          if (StringUtils.isBlank((String) educationDetailsMap.get(JsonKey.ID))) {
+            educationDetailsMap.put(JsonKey.ID, ProjectUtil.getUniqueIdFromTimestamp(i));
+            insertEducationDetails(requestMap, educationDetailsMap, addrResponse, createdBy);
+          } else {
+            updateEducationDetails(educationDetailsMap, addrResponse, createdBy);
+          }
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
         }
       }
     } catch (Exception e) {
@@ -108,7 +119,8 @@ public class EducationManagementActor extends BaseActor {
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.EDUCATION + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.EDUCATION);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }

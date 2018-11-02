@@ -56,15 +56,21 @@ public class AddressManagementActor extends BaseActor {
       String encCreatedById =
           encryptionService.encryptData((String) requestMap.get(JsonKey.CREATED_BY));
       for (int i = 0; i < addressList.size(); i++) {
-        Map<String, Object> address = addressList.get(i);
-        createAddress(encUserId, encCreatedById, address);
+        try {
+          Map<String, Object> address = addressList.get(i);
+          createAddress(encUserId, encCreatedById, address);
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
+        }
       }
     } catch (Exception e) {
       errMsgs.add(e.getMessage());
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.ADDRESS + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.ADDRESS);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }
@@ -83,22 +89,27 @@ public class AddressManagementActor extends BaseActor {
       String encCreatedById =
           encryptionService.encryptData((String) requestMap.get(JsonKey.CREATED_BY));
       for (int i = 0; i < addressList.size(); i++) {
-        Map<String, Object> address = addressList.get(i);
-        if (address.containsKey(JsonKey.IS_DELETED)
-            && null != address.get(JsonKey.IS_DELETED)
-            && ((boolean) address.get(JsonKey.IS_DELETED))
-            && !StringUtils.isBlank((String) address.get(JsonKey.ID))) {
-          addressDao.deleteAddress((String) address.get(JsonKey.ID));
-          continue;
-        }
+        try {
+          Map<String, Object> address = addressList.get(i);
+          if (address.containsKey(JsonKey.IS_DELETED)
+              && null != address.get(JsonKey.IS_DELETED)
+              && ((boolean) address.get(JsonKey.IS_DELETED))
+              && !StringUtils.isBlank((String) address.get(JsonKey.ID))) {
+            addressDao.deleteAddress((String) address.get(JsonKey.ID));
+            continue;
+          }
 
-        if (!address.containsKey(JsonKey.ID)) {
-          createAddress(encUserId, encCreatedById, address);
-        } else {
-          address.put(JsonKey.UPDATED_BY, encCreatedById);
-          address.put(JsonKey.UPDATED_DATE, ProjectUtil.getFormattedDate());
-          address.remove(JsonKey.USER_ID);
-          addressDao.updateAddress(address);
+          if (!address.containsKey(JsonKey.ID)) {
+            createAddress(encUserId, encCreatedById, address);
+          } else {
+            address.put(JsonKey.UPDATED_BY, encCreatedById);
+            address.put(JsonKey.UPDATED_DATE, ProjectUtil.getFormattedDate());
+            address.remove(JsonKey.USER_ID);
+            addressDao.updateAddress(address);
+          }
+        } catch (Exception e) {
+          errMsgs.add(e.getMessage());
+          ProjectLogger.log(e.getMessage(), e);
         }
       }
     } catch (Exception e) {
@@ -106,7 +117,8 @@ public class AddressManagementActor extends BaseActor {
       ProjectLogger.log(e.getMessage(), e);
     }
     if (CollectionUtils.isNotEmpty(errMsgs)) {
-      response.put(JsonKey.ADDRESS + ":" + JsonKey.ERROR_MSG, errMsgs);
+      response.put(JsonKey.KEY, JsonKey.ADDRESS);
+      response.put(JsonKey.ERROR_MSG, errMsgs);
     } else {
       response.put(JsonKey.RESPONSE, JsonKey.SUCCESS);
     }
