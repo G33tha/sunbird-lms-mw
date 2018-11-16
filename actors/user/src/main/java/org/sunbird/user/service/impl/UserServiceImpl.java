@@ -218,6 +218,20 @@ public class UserServiceImpl implements UserService {
         && CollectionUtils.isNotEmpty((List) esResult.get(JsonKey.CONTENT))) {
       Map<String, Object> esContent =
           ((List<Map<String, Object>>) esResult.get(JsonKey.CONTENT)).get(0);
+      if (null != esContent.get(JsonKey.STATUS)) {
+        int status = (int) esContent.get(JsonKey.STATUS);
+        if (1 != status) {
+          ProjectCommonException.throwClientErrorException(
+              ResponseCode.errorInactiveOrg,
+              ProjectUtil.formatMessage(
+                  ResponseCode.errorInactiveOrg.getErrorMessage(), JsonKey.CHANNEL, channel));
+        }
+      } else {
+        ProjectCommonException.throwClientErrorException(
+            ResponseCode.errorInactiveOrg,
+            ProjectUtil.formatMessage(
+                ResponseCode.errorInactiveOrg.getErrorMessage(), JsonKey.CHANNEL, channel));
+      }
       return (String) esContent.get(JsonKey.ID);
     } else {
       if (StringUtils.isNotBlank(channel)) {
@@ -234,5 +248,29 @@ public class UserServiceImpl implements UserService {
             ResponseCode.CLIENT_ERROR.getResponseCode());
       }
     }
+  }
+
+  @Override
+  public String getCustodianChannel(Map<String, Object> userMap, ActorRef actorRef) {
+    String channel = (String) userMap.get(JsonKey.CHANNEL);
+    if (StringUtils.isBlank(channel)) {
+      try {
+        SystemSettingClient client = SystemSettingClientImpl.getInstance();
+        SystemSetting systemSetting =
+            client.getSystemSettingByField(actorRef, JsonKey.CUSTODIAN_ORG_CHANNEL);
+        if (null != systemSetting && StringUtils.isNotBlank(systemSetting.getValue())) {
+          channel = systemSetting.getValue();
+        }
+      } catch (Exception ex) {
+        ProjectLogger.log(
+            "Util:getCustodianChannel: Exception occurred while fetching custodian channel from system setting.",
+            ex);
+      }
+    }
+    if (StringUtils.isBlank(channel)) {
+      channel = ProjectUtil.getConfigValue(JsonKey.SUNBIRD_DEFAULT_CHANNEL);
+      userMap.put(JsonKey.CHANNEL, channel);
+    }
+    return channel;
   }
 }

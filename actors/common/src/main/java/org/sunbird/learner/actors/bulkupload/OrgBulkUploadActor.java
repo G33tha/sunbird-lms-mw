@@ -20,9 +20,8 @@ import org.sunbird.learner.actors.bulkupload.model.BulkUploadProcess;
 import org.sunbird.learner.util.Util;
 
 @ActorConfig(
-  tasks = {"orgBulkUpload"},
-  asyncTasks = {}
-)
+    tasks = {"orgBulkUpload"},
+    asyncTasks = {})
 public class OrgBulkUploadActor extends BaseBulkUploadActor {
   private SystemSettingClient systemSettingClient = new SystemSettingClientImpl();
   private String[] bulkOrgAllowedFields = {
@@ -78,7 +77,17 @@ public class OrgBulkUploadActor extends BaseBulkUploadActor {
               .collect(
                   Collectors.toMap(
                       entry -> (entry.getKey()).toLowerCase(), entry -> entry.getValue()));
-      supportedColumnsLowerCaseMap.forEach((key, value) -> supportedColumnsList.add(key));
+      Map<String, Object> internalNamesLowerCaseMap = new HashMap<>();
+      supportedColumnsMap.forEach(
+          (String k, Object v) -> {
+            internalNamesLowerCaseMap.put(v.toString().toLowerCase(), v.toString());
+          });
+      supportedColumnsLowerCaseMap.putAll(internalNamesLowerCaseMap);
+      supportedColumnsLowerCaseMap.forEach(
+          (key, value) -> {
+            supportedColumnsList.add(key);
+            supportedColumnsList.add((String) value);
+          });
       List<String> mandatoryColumns =
           (List<String>) (((Map<String, Object>) dataObject).get("mandatoryColumns"));
       validateFileHeaderFields(
@@ -156,7 +165,7 @@ public class OrgBulkUploadActor extends BaseBulkUploadActor {
             ProjectUtil.EsIndex.sunbird.getIndexName(),
             ProjectUtil.EsType.organisation.getTypeName(),
             orgId);
-    if (result != null || result.size() > 0) {
+    if (result != null && result.size() > 0) {
       return result;
     }
     return null;

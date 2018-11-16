@@ -115,7 +115,7 @@ public class CourseBatchManagementActor extends BaseActor {
       validateParticipants(participants, courseBatch);
       Map<String, Object> participantsMap = getParticipantsMap(participants, courseBatch);
 
-      courseBatch.setParticipant((Map<String, Boolean>) participantsMap.get(JsonKey.UPDATE));
+      courseBatch.setParticipant((Map<String, Boolean>) participantsMap.get(JsonKey.PARTICIPANTS));
     }
 
     Response result = courseBatchDao.create(courseBatch);
@@ -145,7 +145,7 @@ public class CourseBatchManagementActor extends BaseActor {
   private boolean courseNotificationActive() {
     return Boolean.parseBoolean(
         PropertiesCache.getInstance()
-            .getProperty(JsonKey.SUNBIRD_COURSE_BATCH_NOTIFICATIONS_ACTIVE));
+            .getProperty(JsonKey.SUNBIRD_COURSE_BATCH_NOTIFICATIONS_ENABLED));
   }
 
   private void batchOperationNotifier(
@@ -167,7 +167,8 @@ public class CourseBatchManagementActor extends BaseActor {
     } else {
       batchNotificationMap.put(JsonKey.OPERATION_TYPE, JsonKey.ADD);
       batchNotificationMap.put(JsonKey.ADDED_MENTORS, courseBatch.getMentors());
-      batchNotificationMap.put(JsonKey.ADDED_PARTICIPANTS, courseBatch.getParticipant());
+      batchNotificationMap.put(
+          JsonKey.ADDED_PARTICIPANTS, getParticipantsList(courseBatch.getParticipant()));
     }
     batchNotificationMap.put(JsonKey.COURSE_BATCH, courseBatch);
     batchNotification.setRequest(batchNotificationMap);
