@@ -8,9 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.testkit.javadsl.TestKit;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -58,14 +56,14 @@ public class UserStatusActorTest {
   private String userId = "someUserId";
   private TestKit probe = new TestKit(system);
   private ActorRef subject = system.actorOf(props);
-  private static UserService userService;
-  private static User user;
-  private static Keycloak keycloak;
-  private static UserResource resource;
-  private static UsersResource usersResource;
-  private static UserRepresentation ur;
-  private static RealmResource realmResource;
-  private static CassandraOperationImpl cassandraOperation;
+  private UserService userService;
+  private User user;
+  private Keycloak keycloak;
+  private UserResource resource;
+  private UsersResource usersResource;
+  private UserRepresentation ur;
+  private RealmResource realmResource;
+  private CassandraOperationImpl cassandraOperation;
 
   @Before
   public void init() {
@@ -88,8 +86,22 @@ public class UserStatusActorTest {
     when(realmResource.users()).thenReturn(usersResource);
     when(usersResource.get(Mockito.any())).thenReturn(resource);
     when(resource.toRepresentation()).thenReturn(ur);
+    ur.setEnabled(Mockito.anyBoolean());
     user = mock(User.class);
     when(userService.getUserById(Mockito.anyString())).thenReturn(user);
+  }
+
+  @After
+  public void teardown() {
+
+    Mockito.reset(resource);
+    Mockito.reset(usersResource);
+    Mockito.reset(ur);
+    Mockito.reset(realmResource);
+    Mockito.reset(keycloak);
+    Mockito.reset(userService);
+    Mockito.reset(user);
+    Mockito.reset(cassandraOperation);
   }
 
   @Test
@@ -105,7 +117,7 @@ public class UserStatusActorTest {
     reqObj.setOperation(ActorOperations.BLOCK_USER.getValue());
     reqObj.put(JsonKey.USER_ID, userId);
     subject.tell(reqObj, probe.getRef());
-    Response res = probe.expectMsgClass(duration("10 second"), Response.class);
+    Response res = probe.expectMsgClass(duration("10000 second"), Response.class);
     Assert.assertTrue(null != res && res.getResponseCode() == ResponseCode.OK);
   }
 
@@ -118,7 +130,7 @@ public class UserStatusActorTest {
     reqObj.put(JsonKey.USER_ID, userId);
     subject.tell(reqObj, probe.getRef());
     ProjectCommonException exception =
-        probe.expectMsgClass(duration("10 second"), ProjectCommonException.class);
+        probe.expectMsgClass(duration("10000 second"), ProjectCommonException.class);
     Assert.assertTrue(
         ((ProjectCommonException) exception)
             .getCode()
