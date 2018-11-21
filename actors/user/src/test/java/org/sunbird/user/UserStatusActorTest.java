@@ -100,8 +100,8 @@ public class UserStatusActorTest {
     Mockito.reset(realmResource);
     Mockito.reset(keycloak);
     Mockito.reset(userService);
-    Mockito.reset(user);
-    Mockito.reset(cassandraOperation);
+    //    Mockito.reset(user);
+    //    Mockito.reset(cassandraOperation);
   }
 
   @Test
