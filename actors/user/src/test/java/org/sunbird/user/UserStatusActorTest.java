@@ -65,6 +65,11 @@ public class UserStatusActorTest {
   private RealmResource realmResource;
   private CassandraOperationImpl cassandraOperation;
 
+  @BeforeClass
+  public static void beforeClass() {
+    PowerMockito.mockStatic(UserServiceImpl.class);
+  }
+
   @Before
   public void init() {
 
@@ -77,7 +82,7 @@ public class UserStatusActorTest {
 
     when(ServiceFactory.getInstance()).thenReturn(cassandraOperation);
     keycloak = mock(Keycloak.class);
-    PowerMockito.mockStatic(UserServiceImpl.class);
+    //    PowerMockito.mockStatic(UserServiceImpl.class);
     userService = mock(UserService.class);
     when(UserServiceImpl.getInstance()).thenReturn(userService);
     PowerMockito.mockStatic(KeyCloakConnectionProvider.class);
@@ -91,7 +96,7 @@ public class UserStatusActorTest {
     when(userService.getUserById(Mockito.anyString())).thenReturn(user);
   }
 
-  @After
+  /*@After
   public void teardown() {
 
     Mockito.reset(resource);
@@ -102,7 +107,7 @@ public class UserStatusActorTest {
     Mockito.reset(userService);
     //    Mockito.reset(user);
     //    Mockito.reset(cassandraOperation);
-  }
+  }*/
 
   @Test
   public void testBlockUserSuccess() {
