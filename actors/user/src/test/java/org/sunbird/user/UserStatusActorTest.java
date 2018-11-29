@@ -35,55 +35,30 @@ import org.sunbird.user.service.UserService;
 import org.sunbird.user.service.impl.UserServiceImpl;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({
-  UserServiceImpl.class,
-  UserService.class,
-  User.class,
-  KeyCloakConnectionProvider.class,
-  Keycloak.class,
-  UserResource.class,
-  UserRepresentation.class,
-  UsersResource.class,
-  RealmResource.class,
-  CassandraOperationImpl.class,
-  ServiceFactory.class
-})
+@PrepareForTest({UserServiceImpl.class, KeyCloakConnectionProvider.class, ServiceFactory.class})
 @PowerMockIgnore("javax.management.*")
 public class UserStatusActorTest {
 
   private static final Props props = Props.create(UserStatusActor.class);
   private static ActorSystem system = ActorSystem.create("system");
   private String userId = "someUserId";
-  private TestKit probe = new TestKit(system);
-  private ActorRef subject = system.actorOf(props);
-  private UserService userService;
   private User user;
-  private Keycloak keycloak;
-  private UserResource resource;
-  private UsersResource usersResource;
-  private UserRepresentation ur;
-  private RealmResource realmResource;
-  private CassandraOperationImpl cassandraOperation;
-
-  @BeforeClass
-  public static void beforeClass() {
-    PowerMockito.mockStatic(UserServiceImpl.class);
-  }
+  private static CassandraOperationImpl cassandraOperation;
 
   @Before
   public void init() {
 
     PowerMockito.mockStatic(ServiceFactory.class);
-    resource = mock(UserResource.class);
-    usersResource = mock(UsersResource.class);
-    ur = mock(UserRepresentation.class);
-    realmResource = mock(RealmResource.class);
+    UserResource resource = mock(UserResource.class);
+    UsersResource usersResource = mock(UsersResource.class);
+    UserRepresentation ur = mock(UserRepresentation.class);
+    RealmResource realmResource = mock(RealmResource.class);
     cassandraOperation = mock(CassandraOperationImpl.class);
 
     when(ServiceFactory.getInstance()).thenReturn(cassandraOperation);
-    keycloak = mock(Keycloak.class);
-    //    PowerMockito.mockStatic(UserServiceImpl.class);
-    userService = mock(UserService.class);
+    Keycloak keycloak = mock(Keycloak.class);
+    PowerMockito.mockStatic(UserServiceImpl.class);
+    UserService userService = mock(UserService.class);
     when(UserServiceImpl.getInstance()).thenReturn(userService);
     PowerMockito.mockStatic(KeyCloakConnectionProvider.class);
     when(KeyCloakConnectionProvider.getConnection()).thenReturn(keycloak);
@@ -96,21 +71,11 @@ public class UserStatusActorTest {
     when(userService.getUserById(Mockito.anyString())).thenReturn(user);
   }
 
-  /*@After
-  public void teardown() {
-
-    Mockito.reset(resource);
-    Mockito.reset(usersResource);
-    Mockito.reset(ur);
-    Mockito.reset(realmResource);
-    Mockito.reset(keycloak);
-    Mockito.reset(userService);
-    //    Mockito.reset(user);
-    //    Mockito.reset(cassandraOperation);
-  }*/
-
   @Test
   public void testBlockUserSuccess() {
+
+    TestKit probe = new TestKit(system);
+    ActorRef subject = system.actorOf(props);
 
     when(user.getIsDeleted()).thenReturn(false);
     Response response = createCassandraUpdateSuccessResponse();
@@ -122,12 +87,15 @@ public class UserStatusActorTest {
     reqObj.setOperation(ActorOperations.BLOCK_USER.getValue());
     reqObj.put(JsonKey.USER_ID, userId);
     subject.tell(reqObj, probe.getRef());
-    Response res = probe.expectMsgClass(duration("10000 second"), Response.class);
+    Response res = probe.expectMsgClass(duration("10 second"), Response.class);
     Assert.assertTrue(null != res && res.getResponseCode() == ResponseCode.OK);
   }
 
   @Test
   public void testBlockUserFailureWithUserAlreadyInactive() {
+
+    TestKit probe = new TestKit(system);
+    ActorRef subject = system.actorOf(props);
 
     when(user.getIsDeleted()).thenReturn(true);
     Request reqObj = new Request();
@@ -135,7 +103,7 @@ public class UserStatusActorTest {
     reqObj.put(JsonKey.USER_ID, userId);
     subject.tell(reqObj, probe.getRef());
     ProjectCommonException exception =
-        probe.expectMsgClass(duration("10000 second"), ProjectCommonException.class);
+        probe.expectMsgClass(duration("10 second"), ProjectCommonException.class);
     Assert.assertTrue(
         ((ProjectCommonException) exception)
             .getCode()
@@ -144,6 +112,9 @@ public class UserStatusActorTest {
 
   @Test
   public void testUnBlockUserSuccess() {
+
+    TestKit probe = new TestKit(system);
+    ActorRef subject = system.actorOf(props);
 
     when(user.getIsDeleted()).thenReturn(true);
     Response response = createCassandraUpdateSuccessResponse();
@@ -161,6 +132,9 @@ public class UserStatusActorTest {
 
   @Test
   public void testUnBlockUserFailureWithUserAlreadyActive() {
+
+    TestKit probe = new TestKit(system);
+    ActorRef subject = system.actorOf(props);
 
     when(user.getIsDeleted()).thenReturn(false);
     Request reqObj = new Request();
