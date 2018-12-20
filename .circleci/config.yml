@@ -10,7 +10,7 @@ jobs:
       - run: git submodule update --init --recursive --remote
       - run: mvn clean install -DskipTests=true
       - save_cache:
-          key: lp-dependency-cache-{{ checksum "pom.xml" }}
+          key: dependency-cache-{{ checksum "pom.xml" }}
           paths: ~/.m2
     
 workflows:
